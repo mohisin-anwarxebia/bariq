@@ -1,4 +1,13 @@
 """BARIQ - Beverage Analytics & Revenue Intelligence Quad - Backend"""
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env from backend/ or parent bariq-demo/ directory
+_backend_dir = Path(__file__).resolve().parent.parent
+load_dotenv(_backend_dir / ".env")
+load_dotenv(_backend_dir.parent / ".env")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
