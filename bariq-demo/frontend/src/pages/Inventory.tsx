@@ -167,13 +167,21 @@ export default function Inventory() {
             <tr className="border-b border-slate-700 text-xs text-slate-400">
               <th className="px-4 py-3 text-left">Product</th>
               <th className="px-4 py-3 text-left">Type</th>
-              <th className="px-4 py-3 text-right">On Hand</th>
-              <th className="px-4 py-3 text-right">Expected</th>
+              <th className="px-4 py-3 text-right">
+                <span className="flex items-center justify-end gap-1">On Hand <InfoTooltip term="On Hand" definition="The actual counted quantity currently in stock at the location. Determined by physical count or vision estimate." /></span>
+              </th>
+              <th className="px-4 py-3 text-right">
+                <span className="flex items-center justify-end gap-1">Expected <InfoTooltip term="Expected" definition="The theoretical quantity that should be in stock based on: Beginning Inventory + Purchases - Sales - Known Waste. This is what the system calculates should remain." /></span>
+              </th>
               <th className="px-4 py-3 text-right">
                 <span className="flex items-center justify-end gap-1">Variance <InfoTooltip term="Unexplained Inventory Variance" definition="" /></span>
               </th>
-              <th className="px-4 py-3 text-right">Value</th>
-              <th className="px-4 py-3 text-center">Status</th>
+              <th className="px-4 py-3 text-right">
+                <span className="flex items-center justify-end gap-1">Value <InfoTooltip term="Inventory Variance Value" definition="" /></span>
+              </th>
+              <th className="px-4 py-3 text-center">
+                <span className="flex items-center justify-center gap-1">Status <InfoTooltip term="Status" definition="GREEN = variance under 3% or less than 0.5 units. YELLOW = variance between 3-8% or 0.5-1.5 units. RED (Critical) = variance over 8% or more than 1.5 units. Thresholds are configurable per product category." /></span>
+              </th>
             </tr>
           </thead>
           <tbody>
