@@ -125,7 +125,9 @@ export default function Forecast() {
         </div>
       </div>
 
-      {/* Inventory Risks */}
+      {/* Event Intelligence — Data Source */}
+      <EventIntelligence />
+
       {data.inventory_risks && data.inventory_risks.length > 0 && (
         <div className="bg-navy-800 rounded-xl border border-slate-700 p-5">
           <h3 className="font-semibold mb-4">Inventory Risks Based on Forecast</h3>
@@ -157,6 +159,91 @@ export default function Forecast() {
         <p className="text-xs text-slate-400 font-mono">POST /api/data/forecast/json — JSON payload</p>
         <p className="text-xs text-slate-400 font-mono">GET  /api/data/forecast/template — Format guide</p>
         <p className="text-xs text-slate-400 font-mono">DELETE /api/data/forecast — Revert to demo</p>
+      </div>
+    </div>
+  )
+}
+
+function EventIntelligence() {
+  const [events, setEvents] = useState<any>(null)
+
+  useEffect(() => {
+    fetch('/api/events').then(r => r.json()).then(setEvents)
+  }, [])
+
+  if (!events) return null
+
+  return (
+    <div className="bg-navy-800 rounded-xl border border-slate-700 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold">🎵 Event Intelligence</h3>
+          <InfoTooltip term="Demand Forecast" definition="Local events near your locations are used as a demand signal. Large events with high attendance historically correlate with increased food and beverage demand." />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-2 py-0.5 rounded flex items-center gap-1 ${
+            events.source === 'ticketmaster_live'
+              ? 'bg-green-500/20 text-green-300'
+              : 'bg-slate-600 text-slate-300'
+          }`}>
+            {events.source === 'ticketmaster_live' ? '🟢 Live' : '⚪ Demo'}
+          </span>
+          <a
+            href={events.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-bariq-blue hover:underline flex items-center gap-1"
+          >
+            <span>📡</span>
+            <span>{events.source_label}</span>
+            <span>↗</span>
+          </a>
+        </div>
+      </div>
+
+      {/* Data source highlight */}
+      <div className="bg-slate-700/30 border border-slate-600 rounded-lg p-3 mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm">🎫</span>
+          <p className="text-xs text-slate-300">
+            <strong>Data Source:</strong>{' '}
+            <a href="https://developer.ticketmaster.com/products-and-docs/apis/discovery-api/v2/" target="_blank" rel="noopener noreferrer" className="text-bariq-blue hover:underline">
+              Ticketmaster Discovery API v2
+            </a>
+            {events.source === 'ticketmaster_live'
+              ? ' — Fetching live events within 5 miles of each location'
+              : ' — Set TICKETMASTER_API_KEY in .env for live data'}
+          </p>
+        </div>
+      </div>
+
+      {/* Events List */}
+      <div className="space-y-2">
+        {events.events.map((event: any) => (
+          <div key={event.id} className="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg hover:bg-slate-700/40 transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-lg">
+                {event.category === 'Music' || event.category === 'music' ? '🎵' :
+                 event.category === 'Sports' ? '⚽' :
+                 event.category === 'food' ? '🍔' : '🎭'}
+              </span>
+              <div>
+                <p className="text-sm font-medium">{event.name}</p>
+                <p className="text-xs text-slate-400">
+                  {event.date} {event.time ? `at ${event.time}` : ''} {event.venue ? `• ${event.venue}` : ''}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              {event.expected_attendance && (
+                <p className="text-xs text-bariq-blue">{event.expected_attendance.toLocaleString()} expected</p>
+              )}
+              {event.distance_miles && (
+                <p className="text-xs text-slate-500">{event.distance_miles} mi away</p>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
