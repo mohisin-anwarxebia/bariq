@@ -1,297 +1,152 @@
-# BARIQ Demo — Customer Presentation Guide
+# BARIQ Demo — 10-Minute Customer Presentation
 
-## Meeting Setup
+## Setup
 
 | Item | Detail |
 |------|--------|
-| Duration | 20–25 minutes |
+| Duration | **10 minutes** |
 | Audience | Restaurant/bar owners, hospitality operators, investors |
-| Presenter | Product lead or solutions architect |
-| Equipment | Laptop, external display/projector, browser full-screen |
-| Pre-check | Backend + frontend running, browser on `http://localhost:3000` |
+| Pre-check | Backend + frontend running, browser full-screen on `http://localhost:3000` |
 
 ---
 
-## Opening (2 minutes)
+## Flow at a Glance
 
-### The Problem Statement
-
-> "You already have a POS. You already have inventory software. You already have a reservation system.
->
-> But none of them talk to each other. None of them tell you what's actually happening in your business right now — or what's about to happen tomorrow.
->
-> BARIQ doesn't replace any of that. BARIQ makes all of it intelligent."
-
-### Key Positioning Line
-
-> "BARIQ is an embedded intelligence layer. It connects your existing systems and turns disconnected data into decisions."
+| # | Section | Time | Screen |
+|---|---------|------|--------|
+| 1 | Opening + Dashboard | 2 min | Dashboard |
+| 2 | Inventory Problem | 1.5 min | Inventory |
+| 3 | Vision Proof | 1.5 min | Vision |
+| 4 | Customer Connection | 1.5 min | Experience |
+| 5 | Forecast + Agent + Action | 2.5 min | Forecast → Agent → Approve |
+| 6 | Close | 1 min | Verbal |
 
 ---
 
-## Act 1 — The Existing Application (1 minute)
+## 1. Opening + Dashboard (2 min)
 
-**What to show:** The sidebar, navigation, and overall layout.
+**Open `http://localhost:3000`. Don't explain the tech. Start with the story.**
 
-**Script:**
+> "Alex manages three bar-restaurants. She opens her operations app Monday morning. BARIQ — the embedded intelligence layer — has already analyzed everything and says:"
 
-> "This is Urban Pour Operations — a typical restaurant management platform. You've got your Dashboard, Inventory, Menu, Customers, Reports.
->
-> Notice the purple button in the top right — Ask BARIQ. That's the intelligence layer, embedded right inside the app your team already uses. No new login. No new tool to learn."
+**Point to the screen:**
 
-**Highlight:**
-- Point to sidebar navigation (the "existing" app)
-- Point to BARIQ intelligence section (the embedded AI layer)
-- Point to the DEMO MODE banner — "This runs entirely on your local machine. No cloud. No API keys."
+> - Revenue $82K, up 8.2% ✓
+> - But margin dropped — that's a cost problem
+> - 🔴 Tequila variance — money is leaking
+> - 🟠 Saturday demand spike coming
+> - 🟢 Revenue opportunity waiting
 
----
-
-## Act 2 — Morning Intelligence Brief (2 minutes)
-
-**What to show:** Dashboard KPIs and alerts.
-
-**Script:**
-
-> "Alex is a regional manager. She opens the app Monday morning. Before she asks anything, BARIQ has already analyzed overnight data and tells her:
->
-> Revenue is up 8.2%. Good.
-> Beverage is outperforming food. Interesting.
-> But margin dropped 2.3%. That needs attention.
-> And there's a tequila inventory problem. That needs action."
-
-**Highlight each alert:**
-
-| Alert | What it means |
-|-------|---------------|
-| 🔴 Tequila variance | Money is walking out the door |
-| 🟠 Saturday demand | Opportunity to capture more revenue |
-| 🟠 Chicken stock-out | Risk of disappointing customers |
-| 🟢 Beverage opportunity | Proactive revenue growth |
-
-**Key point:**
-
-> "BARIQ doesn't wait for you to ask. It finds problems and opportunities, then brings them to you."
+> "BARIQ doesn't wait to be asked. It finds problems and brings them to you."
 
 ---
 
-## Act 3 — Inventory Intelligence (3 minutes)
+## 2. Inventory Problem (1.5 min)
 
-**What to show:** Click Inventory in sidebar.
+**Click Inventory.**
 
-**Script:**
-
-> "Let's look at that tequila problem. Here's the inventory table. See Don Julio 1942 — red status.
+> "Don Julio 1942. Red status. Expected 18 bottles, actual 16.3. That's $425 unexplained variance.
 >
-> Expected 18 bottles. Actual count is 16.3. That's a 1.7 bottle variance worth $425.
->
-> But we don't call this theft. We call it 'unexplained operational variance' because there are six possible causes — over-pouring, breakage, receiving errors, counting mistakes, POS mismatches, or yes, occasionally something else."
+> BARIQ also calculates: 487ml left, 16 servings remaining at standard pour. The system expected 18. That's $86 in revenue impact from one bottle."
 
-**Highlight the Pour Intelligence section:**
+**Key line:**
 
-> "BARIQ calculates that this bottle has 487ml remaining. At 30ml per standard pour, that's 16 servings left. But the system expected 18 servings. That's $86 in potential revenue impact — just from one bottle."
-
-**Key point:**
-
-> "This isn't just a number on a spreadsheet. BARIQ connects quantity to money to action."
+> "We don't say theft. We say six possible causes — over-pouring, breakage, receiving error, counting error, POS mismatch, or operational loss. BARIQ investigates, not accuses."
 
 ---
 
-## Act 4 — Computer Vision (2 minutes)
+## 3. Vision Proof (1.5 min)
 
-**What to show:** Click Vision. Click "Analyze Bottle."
+**Click Vision. Click "Analyze Bottle."**
 
-**Script:**
-
-> "Now, what if you could just point a camera at a bottle and know exactly what's in it?
->
-> Click Analyze. BARIQ identifies the bottle — Don Julio 1942, 96% confidence. It estimates 65% fill level. That's approximately 487ml, or about 16 servings.
->
-> But here's where it gets powerful — the three-way reconciliation."
-
-**Point to the comparison:**
+> "Point a camera at a bottle. BARIQ recognizes it — 96% confidence. Estimates 65% fill. Then does a three-way check:"
 
 | Source | Servings |
 |--------|----------|
-| Vision | 16 |
-| Inventory System | 18 |
-| POS Records | 17 |
+| Camera | 16 |
+| Inventory | 18 |
+| POS | 17 |
 
-> "Three different data sources. Three different numbers. BARIQ flags the discrepancy and says: 'Perform a manual count. Confidence: 84%.'
->
-> That's not an accusation. It's an investigation prompt."
+> "Three sources disagree. BARIQ flags it instantly. Confidence: 84%. Recommendation: manual count."
 
 ---
 
-## Act 5 — Customer Experience (2 minutes)
+## 4. Customer Connection (1.5 min)
 
-**What to show:** Click Experience.
+**Click Experience.**
 
-**Script:**
-
-> "Here's something no other bar intelligence tool does. We connect customer feedback directly to operational data.
+> "Scores: Overall 71. Wait time — 60. That's the problem.
 >
-> See the health scores: Overall 71. Food 79. Beverage 69. Wait time 60.
+> BARIQ found the root cause: beverage experience dropped 9% specifically Friday-Saturday 8–10 PM. That same window shows 22% more orders, 14% longer waits, 8% more pour variance.
 >
-> Wait time is the lowest. BARIQ doesn't just show you the number — it tells you WHY."
-
-**Point to Root Cause Analysis:**
-
-> "Beverage experience declined 9% at Downtown Social. The biggest drop happens Friday and Saturday between 8 and 10 PM. That same period shows 22% more orders but 14% longer wait times and 8% more pour variance.
->
-> The potential contributing factor? Peak demand exceeds bar throughput.
->
-> Notice: we say 'potential contributing factors.' BARIQ doesn't claim causation it can't prove."
-
-**Key point:**
-
-> "This is the chain that matters: Customer says 'my drink was inconsistent' → BARIQ traces it back to over-pouring during rush hour → connects it to the inventory variance we saw earlier."
+> So: customers say 'my drink was inconsistent' → BARIQ traces it to over-pouring during rush → connects to the inventory loss we just saw. One thread, three screens."
 
 ---
 
-## Act 6 — Demand Forecasting (2 minutes)
+## 5. Forecast + Agent + Action (2.5 min)
 
-**What to show:** Click Forecast.
+**Click Forecast (15 sec):**
 
-**Script:**
+> "Saturday: music festival, 20,000 people, 94°F. BARIQ predicts tequila +27%, cocktails +24%. Current stock won't cover it."
 
-> "Saturday is coming. There's a music festival downtown — 20,000 people, 1.2 miles away. Temperature: 94°F.
+**Click "Ask BARIQ" button (60 sec):**
+
+Click **"What should I order?"**
+
+> "BARIQ says: 4 cases tequila, 180 lbs chicken, 12 cases beer. Total risk avoidance: $5,400."
+
+**Click Approve (30 sec):**
+
+> "One click. Purchase order created. PO-2026. Done.
 >
-> BARIQ combines historical Saturday patterns, the weather, and the event to predict:
->
-> Beer demand up 18%. Cocktails up 24%. Tequila up 27%. Chicken wings up 21%.
->
-> And it immediately flags: 'Your current tequila inventory won't cover this. Your chicken stock won't cover this.'"
+> Ask → Recommend → Approve → Action. That's the full loop in 10 seconds."
 
-**Key point:**
+**Click Audit (15 sec):**
 
-> "This isn't a guess. It's three data sources — history, weather, events — weighted together. Confidence: 86%."
+> "Every decision logged. Who asked, what BARIQ found, what was approved, when. Enterprise-grade audit trail."
 
 ---
 
-## Act 7 — The Agent (3 minutes)
+## 6. Close (1 min)
 
-**What to show:** Click "Ask BARIQ" button. The agent panel opens.
-
-**Script:**
-
-> "Now the conversational part. Alex can ask questions in plain English."
-
-**Demo these questions in sequence:**
-
-**Question 1:** Click "Why is tequila variance high?"
-
-> "See the response: structured, not just text. There's an Answer, Evidence with specific numbers, a Recommendation, and a Confidence score. Every number comes from the database — BARIQ never invents data."
-
-**Question 2:** Click "What should I order?"
-
-> "BARIQ looks at the forecast, current inventory, and supplier lead times, then says: Order 4 cases tequila, 180 lbs chicken, 12 cases beer. Total opportunity: $5,400.
+> "BARIQ doesn't replace your POS. Doesn't replace your inventory tool. It sits inside your existing technology and connects POS + inventory + vision + customer feedback + weather + events into one intelligence layer.
 >
-> And there's an Approve button right here."
-
-**Click Approve on "Order 4 Cases Tequila":**
-
-> "Done. Purchase order created. PO-2026-00701. $1,920. No phone call, no spreadsheet, no email chain. Ask → Recommend → Approve → Done."
+> Most tools give you dashboards. BARIQ gives you:
+>
+> **Insight → Prediction → Recommendation → Action → Verification**
+>
+> What I showed you runs on a laptop. Imagine it connected to your actual data. What would it find this week?"
 
 ---
 
-## Act 8 — Action Workflow (1 minute)
+## If They Ask Questions
 
-**What to show:** Click Actions in sidebar.
-
-**Script:**
-
-> "All recommendations live here. Each has an impact value and confidence score. The team can Approve, Modify, or Reject.
->
-> When approved, BARIQ creates the operational action — a PO, a staffing change, a process review — and logs everything."
-
----
-
-## Act 9 — Audit Trail (1 minute)
-
-**What to show:** Click Audit.
-
-**Script:**
-
-> "Every question asked. Every tool BARIQ used. Every recommendation made. Every approval or rejection. Timestamped, attributed to a user.
->
-> This is enterprise-grade accountability. If an auditor asks 'why did you order 4 cases of tequila last Saturday?' — the answer is right here, with the data that supported the decision."
+| Question | Answer |
+|----------|--------|
+| "How is this different from a dashboard?" | "Dashboards show what happened. BARIQ tells you why, what's next, and creates the action." |
+| "AI makes things up" | "Every number comes from the database. BARIQ never invents revenue or inventory figures." |
+| "We already have software" | "BARIQ embeds inside it. Doesn't replace, makes it intelligent." |
+| "What does it cost?" | "This runs on a laptop today. Production pricing scales with locations." |
+| "How long to integrate?" | "Drop-in React components. Typical POS integration: 2–4 weeks." |
 
 ---
 
-## Closing (2 minutes)
+## Rules
 
-### The Value Chain
-
-Draw this on a whiteboard or show verbally:
-
-```
-INSIGHT → PREDICTION → RECOMMENDATION → ACTION → VERIFICATION → LEARNING
-```
-
-> "Most tools stop at dashboards. BARIQ goes all the way to action and then measures whether the action worked.
->
-> Customer complained about inconsistent drinks.
-> BARIQ found the pour variance.
-> Connected it to inventory loss.
-> Recommended pour controls.
-> Manager approved.
-> Next week: measure if experience improved.
->
-> That's a closed loop. That's intelligence."
-
-### The Integration Story
-
-> "We didn't ask you to rip out your POS. We didn't replace your inventory system. We sat inside your existing technology and made it smarter.
->
-> Tomorrow, this connects to Toast, to Square, to Restaurant365, to WISK, to real weather APIs, to real event feeds. The architecture is ready. The intelligence layer stays the same."
-
-### Call to Action
-
-> "What I showed you today runs entirely on a laptop. No cloud account. No subscription. No API key.
->
-> Imagine this connected to your actual data. What would it find in your business this week?"
+- ✅ Click fast — momentum over explanation
+- ✅ Let the numbers speak — point, don't narrate every pixel
+- ✅ Say "potential contributing factors" — never "theft" or "caused by"
+- ✅ End on the agent approval — it's the most impressive moment
+- ❌ Don't explain the tech stack
+- ❌ Don't linger on any screen more than 90 seconds
+- ❌ Don't open Swagger or mention Docker
 
 ---
 
-## Objection Handling
+## If Something Breaks
 
-| Objection | Response |
-|-----------|----------|
-| "We already have inventory software" | "BARIQ doesn't replace it. It reads from it, adds intelligence, and gives you actions." |
-| "How is this different from a dashboard?" | "Dashboards show you what happened. BARIQ tells you why, what's coming next, and what to do about it." |
-| "AI makes things up" | "BARIQ never invents a number. Every revenue figure, every inventory count comes from your database. The AI only explains and recommends." |
-| "We're too small for this" | "This demo runs on a laptop. A single location with 20 products already surfaces $5,000+ in weekly insights." |
-| "What about data security?" | "BARIQ is embedded inside your existing application. Your data never leaves your infrastructure. We don't see it." |
-| "How long to integrate?" | "The embedded components are drop-in React widgets. A typical POS integration takes 2–4 weeks." |
-
----
-
-## Do's and Don'ts
-
-### Do
-
-- ✅ Let the alerts speak first — don't explain everything manually
-- ✅ Click through quickly — momentum matters
-- ✅ Use the agent live — type a real question if the audience suggests one
-- ✅ Emphasize "embedded" — BARIQ is inside their app, not a separate tool
-- ✅ Say "potential contributing factors" — never claim certain causation
-- ✅ Show the approval flow — executives love governance
-
-### Don't
-
-- ❌ Don't say "theft" — say "unexplained operational variance"
-- ❌ Don't over-explain the tech stack — focus on business outcomes
-- ❌ Don't demo the Swagger docs unless asked
-- ❌ Don't promise real-time camera integration in V1
-- ❌ Don't linger on any single screen more than 90 seconds
-
----
-
-## Backup: If Something Breaks
-
-| Issue | Quick fix |
-|-------|-----------|
-| Backend crashed | `Ctrl+C` → `uvicorn app.main:app --reload --port 8000` |
-| Frontend blank | Hard refresh: `Cmd+Shift+R` |
-| Data looks wrong | Open Audit → click "Reset Demo" |
-| Agent not responding | Check backend terminal for errors |
-| Need to restart everything | Kill both terminals, `rm -f backend/bariq_demo.db`, restart both |
+| Issue | Fix |
+|-------|-----|
+| Blank screen | `Cmd+Shift+R` |
+| API error | Check backend terminal, restart uvicorn |
+| Bad data | Audit page → "Reset Demo" |
