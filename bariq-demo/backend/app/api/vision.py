@@ -1,10 +1,22 @@
 from fastapi import APIRouter, UploadFile, File
 from typing import Optional
 import random
+import os
+import base64
+import json
+import httpx
 
 router = APIRouter()
 
-# Mock bottle database for demo
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.environ.get("OPENAI_VISION_MODEL", "gpt-4o")
+
+# ---------------------------------------------------------------------------
+# Mock bottle database (fallback when no API key)
+# ---------------------------------------------------------------------------
 BOTTLE_DATABASE = {
     "don-julio-1942": {
         "name": "Don Julio 1942", "product_id": "don-julio-1942",
@@ -62,8 +74,156 @@ MOCK_ANALYSIS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# OpenAI Vision — Real Image Analysis
+# ---------------------------------------------------------------------------
+VISION_PROMPT = """You are BARIQ, a beverage inventory analysis AI. Analyze this image of a bottle or bottles.
+
+For EACH bottle visible in the image, provide:
+1. brand_name: The full brand name (e.g., "Don Julio 1942", "Grey Goose", "Jack Daniel's")
+2. bottle_size_ml: Estimated bottle size in ml (common: 750, 1000, 1750, 375)
+3. fill_percentage: Estimated percentage of liquid remaining (0-100)
+4. confidence: Your confidence in the identification (0.0-1.0)
+5. category: "tequila", "vodka", "whiskey", "gin", "rum", "beer", "wine", or "other"
+
+Respond with ONLY valid JSON in this format:
+{
+  "bottles": [
+    {
+      "brand_name": "...",
+      "bottle_size_ml": 750,
+      "fill_percentage": 65,
+      "confidence": 0.92,
+      "category": "tequila"
+    }
+  ]
+}
+
+If you cannot identify a specific brand, use your best guess and lower the confidence. 
+If the image does not contain any bottles, return: {"bottles": []}
+"""
+
+
+async def _analyze_with_openai(image_bytes: bytes, content_type: str) -> Optional[dict]:
+    """Send image to OpenAI Vision API for real analysis."""
+    if not OPENAI_API_KEY:
+        return None
+
+    # Encode image to base64
+    b64_image = base64.b64encode(image_bytes).decode("utf-8")
+    media_type = content_type or "image/jpeg"
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": OPENAI_MODEL,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": VISION_PROMPT},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{media_type};base64,{b64_image}",
+                                        "detail": "high"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "max_tokens": 1000,
+                    "temperature": 0.1
+                }
+            )
+
+        if response.status_code != 200:
+            print(f"OpenAI Vision API error: {response.status_code} - {response.text[:200]}")
+            return None
+
+        data = response.json()
+        content = data["choices"][0]["message"]["content"]
+
+        # Parse JSON from response (handle markdown code blocks)
+        if "```json" in content:
+            content = content.split("```json")[1].split("```")[0]
+        elif "```" in content:
+            content = content.split("```")[1].split("```")[0]
+
+        return json.loads(content.strip())
+
+    except Exception as e:
+        print(f"OpenAI Vision error: {e}")
+        return None
+
+
+def _build_result_from_ai(bottle_data: dict, filename: str) -> dict:
+    """Build a full analysis result from OpenAI Vision response."""
+    name = bottle_data["brand_name"]
+    bottle_size = bottle_data.get("bottle_size_ml", 750)
+    fill_pct = bottle_data.get("fill_percentage", 50)
+    confidence = bottle_data.get("confidence", 0.85)
+    category = bottle_data.get("category", "spirits")
+
+    # Calculate measurements
+    remaining_ml = int(bottle_size * fill_pct / 100)
+    standard_pour = 30 if category == "tequila" else 45
+    vision_servings = int(remaining_ml / standard_pour)
+
+    # Simulate inventory/POS comparison (in production, this queries real data)
+    inv_servings = vision_servings + random.choice([0, 0, 1, 1, 2])
+    pos_servings = inv_servings - random.choice([0, 0, 1])
+    variance_detected = vision_servings != inv_servings
+
+    # Estimate price per serving based on category
+    price_map = {"tequila": 18, "vodka": 13, "whiskey": 14, "gin": 14, "rum": 11, "beer": 8, "wine": 12, "other": 12}
+    price_per_serving = price_map.get(category, 12)
+
+    return {
+        "bottle": {
+            "name": name,
+            "product_id": name.lower().replace(" ", "-").replace("'", ""),
+            "confidence": confidence,
+            "category": category
+        },
+        "fill_level": {
+            "percentage": fill_pct,
+            "confidence": min(confidence, 0.92)
+        },
+        "measurements": {
+            "bottle_size_ml": bottle_size,
+            "estimated_remaining_ml": remaining_ml,
+            "standard_pour_ml": standard_pour,
+            "estimated_servings": vision_servings
+        },
+        "comparison": {
+            "vision_servings": vision_servings,
+            "inventory_servings": inv_servings,
+            "pos_servings": pos_servings,
+            "variance_detected": variance_detected,
+            "confidence": min(confidence, 0.90),
+            "recommendation": "Perform a manual bottle count and review pour controls during peak periods." if variance_detected else "No significant variance detected."
+        },
+        "financials": {
+            "cost_per_bottle": round(price_per_serving * (bottle_size / standard_pour) * 0.3, 2),
+            "price_per_serving": price_per_serving,
+            "remaining_revenue_value": round(vision_servings * price_per_serving, 2),
+            "variance_revenue_impact": round(abs(vision_servings - inv_servings) * price_per_serving, 2) if variance_detected else 0
+        },
+        "analysis_source": "openai_vision"
+    }
+
+
+# ---------------------------------------------------------------------------
+# Mock fallback functions
+# ---------------------------------------------------------------------------
 def _match_bottle_from_filename(filename: str) -> Optional[str]:
-    """Try to match a bottle from the filename."""
     fname = filename.lower()
     for key in BOTTLE_DATABASE:
         name_parts = BOTTLE_DATABASE[key]["name"].lower().replace("'", "").split()
@@ -72,11 +232,9 @@ def _match_bottle_from_filename(filename: str) -> Optional[str]:
     return None
 
 
-def _analyze_single_bottle(bottle_key: str) -> dict:
-    """Generate analysis for a single bottle."""
+def _analyze_single_bottle_mock(bottle_key: str) -> dict:
     bottle = BOTTLE_DATABASE[bottle_key]
     mock = MOCK_ANALYSIS[bottle_key]
-
     fill_pct = mock["fill_pct"]
     remaining_ml = int(bottle["bottle_size_ml"] * fill_pct / 100)
     vision_servings = int(remaining_ml / bottle["standard_pour_ml"])
@@ -111,125 +269,147 @@ def _analyze_single_bottle(bottle_key: str) -> dict:
             "price_per_serving": bottle["price"],
             "remaining_revenue_value": round(vision_servings * bottle["price"], 2),
             "variance_revenue_impact": round(abs(vision_servings - mock["inv_servings"]) * bottle["price"], 2) if variance_detected else 0
-        }
+        },
+        "analysis_source": "mock"
     }
 
 
-def _detect_bottles_in_image(filename: str) -> list:
-    """
-    Simulate detecting multiple bottles in a single image.
-    In production, this would use a real object detection model (YOLO, etc.)
-    that identifies and localizes each bottle in the frame.
-
-    For demo: uses filename hints or returns a random set of 1-4 bottles.
-    """
+def _detect_bottles_mock(filename: str) -> list:
     matched = _match_bottle_from_filename(filename) if filename else None
-
     if matched:
-        # If filename matches one specific bottle, return just that one
         return [matched]
-
-    # Simulate detecting multiple bottles in a shelf/bar photo
-    # Keywords that suggest multi-bottle images
     multi_keywords = ["shelf", "bar", "rack", "lineup", "collection", "all", "multiple", "batch", "inventory", "stock"]
     if filename and any(kw in filename.lower() for kw in multi_keywords):
-        # Simulate detecting 3-5 bottles in a shelf image
         count = random.randint(3, 5)
         keys = list(BOTTLE_DATABASE.keys())
         random.shuffle(keys)
         return keys[:count]
-
-    # Default: detect 1 bottle (Don Julio for demo)
     return ["don-julio-1942"]
 
 
+# ---------------------------------------------------------------------------
+# API Endpoints
+# ---------------------------------------------------------------------------
 @router.post("/vision/analyze")
 async def analyze_image(image: Optional[UploadFile] = File(None)):
     """
-    Analyze a single image that may contain one or multiple bottles.
+    Analyze a bottle image.
 
-    The vision system:
-    1. Scans the image for bottle objects
-    2. Identifies each bottle (brand recognition)
-    3. Estimates fill level for each
-    4. Compares against inventory and POS for each
+    If OPENAI_API_KEY is set in environment:
+      - Sends actual image to GPT-4o Vision for real brand identification and fill estimation
+      - Returns actual detected brand name and estimated fill level
 
-    If only one bottle is detected, returns single-bottle detail.
-    If multiple bottles are detected, returns batch summary + per-bottle detail.
+    If no API key (demo mode):
+      - Uses filename hints to pick a mock bottle
+      - Returns pre-set demo data
 
-    Tip: Use filenames like 'shelf-photo.jpg' or 'bar-lineup.png' to simulate
-    multi-bottle detection in demo mode.
+    Upload any photo of a bottle — the AI identifies the brand, estimates fill level,
+    and BARIQ cross-references against inventory and POS records.
     """
     filename = image.filename if image else "demo_bottle.jpg"
 
-    # Step 1: Detect how many bottles are in the image
-    detected_bottles = _detect_bottles_in_image(filename)
-    bottles_count = len(detected_bottles)
+    # Try real OpenAI Vision if we have a key and an actual image
+    if OPENAI_API_KEY and image:
+        image_bytes = await image.read()
+        content_type = image.content_type or "image/jpeg"
 
-    # Step 2: Analyze each detected bottle
-    results = []
-    for i, bottle_key in enumerate(detected_bottles):
-        analysis = _analyze_single_bottle(bottle_key)
-        analysis["detection"] = {
-            "index": i + 1,
-            "location": _mock_bounding_box(i, bottles_count),
-            "detection_confidence": round(random.uniform(0.88, 0.97), 2)
-        }
-        results.append(analysis)
+        ai_result = await _analyze_with_openai(image_bytes, content_type)
 
-    # Step 3: Return appropriate response format
-    if bottles_count == 1:
-        # Single bottle — flat response for backward compatibility
-        result = results[0]
+        if ai_result and ai_result.get("bottles"):
+            bottles = ai_result["bottles"]
+
+            if len(bottles) == 1:
+                result = _build_result_from_ai(bottles[0], filename)
+                result["bottles_detected"] = 1
+                result["filename"] = filename
+                return result
+            else:
+                # Multiple bottles detected by AI
+                results = []
+                for i, b in enumerate(bottles):
+                    r = _build_result_from_ai(b, filename)
+                    r["detection"] = {"index": i + 1}
+                    results.append(r)
+
+                total_variance_count = sum(1 for r in results if r["comparison"]["variance_detected"])
+                total_variance_value = sum(r["financials"]["variance_revenue_impact"] for r in results)
+                total_remaining_value = sum(r["financials"]["remaining_revenue_value"] for r in results)
+
+                return {
+                    "filename": filename,
+                    "bottles_detected": len(bottles),
+                    "scan_type": "multi_bottle",
+                    "analysis_source": "openai_vision",
+                    "detection_summary": {
+                        "total_detected": len(bottles),
+                        "bottles_ok": len(bottles) - total_variance_count,
+                        "bottles_with_variance": total_variance_count,
+                        "total_variance_revenue_impact": round(total_variance_value, 2),
+                        "total_remaining_revenue_value": round(total_remaining_value, 2),
+                        "recommendation": f"{total_variance_count} of {len(bottles)} bottles show potential variance." if total_variance_count > 0 else "All detected bottles within expected parameters."
+                    },
+                    "bottles": results
+                }
+
+    # Fallback: Mock analysis
+    detected_bottles = _detect_bottles_mock(filename)
+
+    if len(detected_bottles) == 1:
+        result = _analyze_single_bottle_mock(detected_bottles[0])
         result["bottles_detected"] = 1
         result["filename"] = filename
         return result
     else:
-        # Multiple bottles detected in one image
+        results = []
+        for i, bottle_key in enumerate(detected_bottles):
+            r = _analyze_single_bottle_mock(bottle_key)
+            r["detection"] = {"index": i + 1}
+            results.append(r)
+
         total_variance_count = sum(1 for r in results if r["comparison"]["variance_detected"])
         total_variance_value = sum(r["financials"]["variance_revenue_impact"] for r in results)
         total_remaining_value = sum(r["financials"]["remaining_revenue_value"] for r in results)
 
         return {
             "filename": filename,
-            "bottles_detected": bottles_count,
+            "bottles_detected": len(detected_bottles),
             "scan_type": "multi_bottle",
+            "analysis_source": "mock",
             "detection_summary": {
-                "total_detected": bottles_count,
-                "bottles_ok": bottles_count - total_variance_count,
+                "total_detected": len(detected_bottles),
+                "bottles_ok": len(detected_bottles) - total_variance_count,
                 "bottles_with_variance": total_variance_count,
                 "total_variance_revenue_impact": round(total_variance_value, 2),
                 "total_remaining_revenue_value": round(total_remaining_value, 2),
-                "recommendation": f"{total_variance_count} of {bottles_count} bottles show potential variance. Recommend manual count for flagged items." if total_variance_count > 0 else "All detected bottles within expected parameters."
+                "recommendation": f"{total_variance_count} of {len(detected_bottles)} bottles show potential variance." if total_variance_count > 0 else "All detected bottles within expected parameters."
             },
             "bottles": results
         }
 
 
+@router.get("/vision/status")
+async def vision_status():
+    """Check whether real AI vision is active or mock mode."""
+    return {
+        "mode": "openai_vision" if OPENAI_API_KEY else "mock",
+        "model": OPENAI_MODEL if OPENAI_API_KEY else None,
+        "description": "Real image analysis via OpenAI GPT-4o Vision" if OPENAI_API_KEY else "Demo mode — uses filename hints for bottle identification. Set OPENAI_API_KEY to enable real vision.",
+        "recognized_bottles_mock": len(BOTTLE_DATABASE)
+    }
+
+
 @router.get("/vision/bottles")
 async def list_known_bottles():
-    """List all bottles the vision system can recognize."""
+    """List all bottles the vision system can recognize (mock mode reference)."""
     return {
+        "mode": "openai_vision" if OPENAI_API_KEY else "mock",
         "bottles": [
             {"id": k, "name": v["name"], "size_ml": v["bottle_size_ml"], "pour_ml": v["standard_pour_ml"]}
             for k, v in BOTTLE_DATABASE.items()
         ],
         "tips": [
-            "Upload any image — the system detects bottles automatically",
-            "Single bottle in frame → detailed single-bottle analysis",
-            "Multiple bottles in frame → batch analysis with summary",
-            "Use 'shelf', 'bar', 'rack', 'lineup' in filename to simulate multi-bottle detection",
-            "Use bottle names in filename for specific recognition (e.g., 'grey-goose.jpg')"
+            "With OPENAI_API_KEY set: upload ANY bottle image for real AI identification",
+            "Without API key: filename hints trigger mock recognition",
+            "Use 'shelf', 'bar', 'rack' in filename to simulate multi-bottle detection (mock mode)"
         ]
-    }
-
-
-def _mock_bounding_box(index: int, total: int) -> dict:
-    """Generate a mock bounding box position for detected bottle in image."""
-    width_per = 1.0 / total
-    return {
-        "x": round(index * width_per + 0.02, 2),
-        "y": 0.1,
-        "width": round(width_per - 0.04, 2),
-        "height": 0.8
     }

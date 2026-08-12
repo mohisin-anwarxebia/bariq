@@ -1,10 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { InfoTooltip } from '../components/InfoTooltip'
 
 export default function Vision() {
   const [result, setResult] = useState<any>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [visionMode, setVisionMode] = useState<string>('loading')
+
+  useEffect(() => {
+    fetch('/api/vision/status').then(r => r.json()).then(d => setVisionMode(d.mode)).catch(() => setVisionMode('mock'))
+  }, [])
 
   const analyzeImage = async (file?: File) => {
     setAnalyzing(true)
@@ -38,11 +43,20 @@ export default function Vision() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Vision Analysis</h2>
-        <div className="flex items-center gap-2 mt-1">
-          <p className="text-sm text-slate-400">Upload one image — BARIQ detects and analyzes all bottles in the frame</p>
-          <InfoTooltip term="Fill Level" definition="" />
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Vision Analysis</h2>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-slate-400">Upload one image — BARIQ detects and analyzes all bottles in the frame</p>
+            <InfoTooltip term="Fill Level" definition="" />
+          </div>
+        </div>
+        <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+          visionMode === 'openai_vision'
+            ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+            : 'bg-slate-700 text-slate-400 border border-slate-600'
+        }`}>
+          {visionMode === 'openai_vision' ? '🧠 AI Vision Active' : '🎭 Demo Mode'}
         </div>
       </div>
 
@@ -158,6 +172,12 @@ function SingleBottleResult({ result }: { result: any }) {
         <div className="flex items-center gap-2">
           <span className="text-xs bg-bariq-blue/20 text-bariq-blue px-2 py-0.5 rounded">1 bottle detected</span>
           {result.filename && <span className="text-xs text-slate-500">📄 {result.filename}</span>}
+          {result.analysis_source === 'openai_vision' && (
+            <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">🧠 AI Vision</span>
+          )}
+          {result.analysis_source === 'mock' && (
+            <span className="text-xs bg-slate-700 text-slate-400 px-2 py-0.5 rounded">Demo Data</span>
+          )}
         </div>
       </div>
 
