@@ -1,94 +1,53 @@
 from fastapi import APIRouter, UploadFile, File
-from typing import List, Optional
+from typing import Optional
 import random
 
 router = APIRouter()
 
-# Mock bottle database for demo — simulates recognition of different bottles
+# Mock bottle database for demo
 BOTTLE_DATABASE = {
     "don-julio-1942": {
-        "name": "Don Julio 1942",
-        "product_id": "don-julio-1942",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 30,
-        "cost": 145.00,
-        "price": 22.00,
+        "name": "Don Julio 1942", "product_id": "don-julio-1942",
+        "bottle_size_ml": 750, "standard_pour_ml": 30, "cost": 145.00, "price": 22.00,
     },
     "patron-silver": {
-        "name": "Patron Silver",
-        "product_id": "patron-silver",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 30,
-        "cost": 48.00,
-        "price": 14.00,
+        "name": "Patron Silver", "product_id": "patron-silver",
+        "bottle_size_ml": 750, "standard_pour_ml": 30, "cost": 48.00, "price": 14.00,
     },
     "titos-vodka": {
-        "name": "Tito's Vodka",
-        "product_id": "titos-vodka",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 22.00,
-        "price": 11.00,
+        "name": "Tito's Vodka", "product_id": "titos-vodka",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 22.00, "price": 11.00,
     },
     "grey-goose": {
-        "name": "Grey Goose",
-        "product_id": "grey-goose",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 35.00,
-        "price": 14.00,
+        "name": "Grey Goose", "product_id": "grey-goose",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 35.00, "price": 14.00,
     },
     "jameson": {
-        "name": "Jameson",
-        "product_id": "jameson",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 28.00,
-        "price": 12.00,
+        "name": "Jameson", "product_id": "jameson",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 28.00, "price": 12.00,
     },
     "woodford-reserve": {
-        "name": "Woodford Reserve",
-        "product_id": "woodford-reserve",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 38.00,
-        "price": 14.00,
+        "name": "Woodford Reserve", "product_id": "woodford-reserve",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 38.00, "price": 14.00,
     },
     "hendricks-gin": {
-        "name": "Hendrick's Gin",
-        "product_id": "hendricks-gin",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 36.00,
-        "price": 14.00,
+        "name": "Hendrick's Gin", "product_id": "hendricks-gin",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 36.00, "price": 14.00,
     },
     "jack-daniels": {
-        "name": "Jack Daniel's",
-        "product_id": "jack-daniels",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 24.00,
-        "price": 10.00,
+        "name": "Jack Daniel's", "product_id": "jack-daniels",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 24.00, "price": 10.00,
     },
     "tanqueray": {
-        "name": "Tanqueray",
-        "product_id": "tanqueray",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 26.00,
-        "price": 12.00,
+        "name": "Tanqueray", "product_id": "tanqueray",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 26.00, "price": 12.00,
     },
     "bacardi": {
-        "name": "Bacardi",
-        "product_id": "bacardi",
-        "bottle_size_ml": 750,
-        "standard_pour_ml": 45,
-        "cost": 18.00,
-        "price": 10.00,
+        "name": "Bacardi", "product_id": "bacardi",
+        "bottle_size_ml": 750, "standard_pour_ml": 45, "cost": 18.00, "price": 10.00,
     },
 }
 
-# Simulated fill levels and variances per bottle for demo
 MOCK_ANALYSIS = {
     "don-julio-1942": {"fill_pct": 65, "fill_confidence": 0.84, "inv_servings": 18, "pos_servings": 17},
     "patron-silver": {"fill_pct": 72, "fill_confidence": 0.87, "inv_servings": 22, "pos_servings": 21},
@@ -103,7 +62,17 @@ MOCK_ANALYSIS = {
 }
 
 
-def _analyze_single_bottle(bottle_key: str, filename: str = "") -> dict:
+def _match_bottle_from_filename(filename: str) -> Optional[str]:
+    """Try to match a bottle from the filename."""
+    fname = filename.lower()
+    for key in BOTTLE_DATABASE:
+        name_parts = BOTTLE_DATABASE[key]["name"].lower().replace("'", "").split()
+        if any(part in fname for part in name_parts if len(part) > 3):
+            return key
+    return None
+
+
+def _analyze_single_bottle(bottle_key: str) -> dict:
     """Generate analysis for a single bottle."""
     bottle = BOTTLE_DATABASE[bottle_key]
     mock = MOCK_ANALYSIS[bottle_key]
@@ -111,11 +80,9 @@ def _analyze_single_bottle(bottle_key: str, filename: str = "") -> dict:
     fill_pct = mock["fill_pct"]
     remaining_ml = int(bottle["bottle_size_ml"] * fill_pct / 100)
     vision_servings = int(remaining_ml / bottle["standard_pour_ml"])
-
     variance_detected = vision_servings != mock["inv_servings"]
 
     return {
-        "filename": filename,
         "bottle": {
             "name": bottle["name"],
             "product_id": bottle["product_id"],
@@ -148,79 +115,121 @@ def _analyze_single_bottle(bottle_key: str, filename: str = "") -> dict:
     }
 
 
+def _detect_bottles_in_image(filename: str) -> list:
+    """
+    Simulate detecting multiple bottles in a single image.
+    In production, this would use a real object detection model (YOLO, etc.)
+    that identifies and localizes each bottle in the frame.
+
+    For demo: uses filename hints or returns a random set of 1-4 bottles.
+    """
+    matched = _match_bottle_from_filename(filename) if filename else None
+
+    if matched:
+        # If filename matches one specific bottle, return just that one
+        return [matched]
+
+    # Simulate detecting multiple bottles in a shelf/bar photo
+    # Keywords that suggest multi-bottle images
+    multi_keywords = ["shelf", "bar", "rack", "lineup", "collection", "all", "multiple", "batch", "inventory", "stock"]
+    if filename and any(kw in filename.lower() for kw in multi_keywords):
+        # Simulate detecting 3-5 bottles in a shelf image
+        count = random.randint(3, 5)
+        keys = list(BOTTLE_DATABASE.keys())
+        random.shuffle(keys)
+        return keys[:count]
+
+    # Default: detect 1 bottle (Don Julio for demo)
+    return ["don-julio-1942"]
+
+
 @router.post("/vision/analyze")
-async def analyze_bottle(image: Optional[UploadFile] = File(None)):
-    """Analyze a single bottle image. If no file uploaded, returns Don Julio 1942 demo."""
-    # Determine which bottle to "recognize" based on filename
-    bottle_key = "don-julio-1942"  # default
-
-    if image and image.filename:
-        fname = image.filename.lower()
-        for key in BOTTLE_DATABASE:
-            # Match by product name in filename
-            name_parts = BOTTLE_DATABASE[key]["name"].lower().replace("'", "").split()
-            if any(part in fname for part in name_parts):
-                bottle_key = key
-                break
-
-    result = _analyze_single_bottle(bottle_key, image.filename if image else "demo_bottle.jpg")
-    return result
-
-
-@router.post("/vision/analyze-batch")
-async def analyze_batch(images: List[UploadFile] = File(...)):
+async def analyze_image(image: Optional[UploadFile] = File(None)):
     """
-    Analyze multiple bottle images at once.
-    Upload multiple files — each is analyzed independently.
-    Returns a list of results with summary statistics.
+    Analyze a single image that may contain one or multiple bottles.
+
+    The vision system:
+    1. Scans the image for bottle objects
+    2. Identifies each bottle (brand recognition)
+    3. Estimates fill level for each
+    4. Compares against inventory and POS for each
+
+    If only one bottle is detected, returns single-bottle detail.
+    If multiple bottles are detected, returns batch summary + per-bottle detail.
+
+    Tip: Use filenames like 'shelf-photo.jpg' or 'bar-lineup.png' to simulate
+    multi-bottle detection in demo mode.
     """
+    filename = image.filename if image else "demo_bottle.jpg"
+
+    # Step 1: Detect how many bottles are in the image
+    detected_bottles = _detect_bottles_in_image(filename)
+    bottles_count = len(detected_bottles)
+
+    # Step 2: Analyze each detected bottle
     results = []
-    bottle_keys = list(BOTTLE_DATABASE.keys())
-
-    for i, image in enumerate(images):
-        # Try to match filename to a known bottle
-        bottle_key = None
-        if image.filename:
-            fname = image.filename.lower()
-            for key in BOTTLE_DATABASE:
-                name_parts = BOTTLE_DATABASE[key]["name"].lower().replace("'", "").split()
-                if any(part in fname for part in name_parts):
-                    bottle_key = key
-                    break
-
-        # If not matched, cycle through bottles for demo variety
-        if not bottle_key:
-            bottle_key = bottle_keys[i % len(bottle_keys)]
-
-        result = _analyze_single_bottle(bottle_key, image.filename or f"bottle_{i+1}.jpg")
-        results.append(result)
-
-    # Summary statistics
-    total_variance_count = sum(1 for r in results if r["comparison"]["variance_detected"])
-    total_variance_value = sum(r["financials"]["variance_revenue_impact"] for r in results)
-    total_remaining_value = sum(r["financials"]["remaining_revenue_value"] for r in results)
-
-    return {
-        "total_bottles_analyzed": len(results),
-        "variance_detected_count": total_variance_count,
-        "total_variance_revenue_impact": round(total_variance_value, 2),
-        "total_remaining_revenue_value": round(total_remaining_value, 2),
-        "results": results,
-        "summary": {
-            "bottles_ok": len(results) - total_variance_count,
-            "bottles_with_variance": total_variance_count,
-            "recommendation": f"{total_variance_count} bottle(s) show potential variance. Recommend manual count for flagged items." if total_variance_count > 0 else "All bottles within expected parameters."
+    for i, bottle_key in enumerate(detected_bottles):
+        analysis = _analyze_single_bottle(bottle_key)
+        analysis["detection"] = {
+            "index": i + 1,
+            "location": _mock_bounding_box(i, bottles_count),
+            "detection_confidence": round(random.uniform(0.88, 0.97), 2)
         }
-    }
+        results.append(analysis)
+
+    # Step 3: Return appropriate response format
+    if bottles_count == 1:
+        # Single bottle — flat response for backward compatibility
+        result = results[0]
+        result["bottles_detected"] = 1
+        result["filename"] = filename
+        return result
+    else:
+        # Multiple bottles detected in one image
+        total_variance_count = sum(1 for r in results if r["comparison"]["variance_detected"])
+        total_variance_value = sum(r["financials"]["variance_revenue_impact"] for r in results)
+        total_remaining_value = sum(r["financials"]["remaining_revenue_value"] for r in results)
+
+        return {
+            "filename": filename,
+            "bottles_detected": bottles_count,
+            "scan_type": "multi_bottle",
+            "detection_summary": {
+                "total_detected": bottles_count,
+                "bottles_ok": bottles_count - total_variance_count,
+                "bottles_with_variance": total_variance_count,
+                "total_variance_revenue_impact": round(total_variance_value, 2),
+                "total_remaining_revenue_value": round(total_remaining_value, 2),
+                "recommendation": f"{total_variance_count} of {bottles_count} bottles show potential variance. Recommend manual count for flagged items." if total_variance_count > 0 else "All detected bottles within expected parameters."
+            },
+            "bottles": results
+        }
 
 
 @router.get("/vision/bottles")
 async def list_known_bottles():
-    """List all bottles the vision system can recognize (for demo purposes)."""
+    """List all bottles the vision system can recognize."""
     return {
         "bottles": [
             {"id": k, "name": v["name"], "size_ml": v["bottle_size_ml"], "pour_ml": v["standard_pour_ml"]}
             for k, v in BOTTLE_DATABASE.items()
         ],
-        "tip": "Upload images with bottle names in the filename for best demo results (e.g., 'don-julio-photo.jpg', 'grey-goose-bar.png')"
+        "tips": [
+            "Upload any image — the system detects bottles automatically",
+            "Single bottle in frame → detailed single-bottle analysis",
+            "Multiple bottles in frame → batch analysis with summary",
+            "Use 'shelf', 'bar', 'rack', 'lineup' in filename to simulate multi-bottle detection",
+            "Use bottle names in filename for specific recognition (e.g., 'grey-goose.jpg')"
+        ]
+    }
+
+
+def _mock_bounding_box(index: int, total: int) -> dict:
+    """Generate a mock bounding box position for detected bottle in image."""
+    width_per = 1.0 / total
+    return {
+        "x": round(index * width_per + 0.02, 2),
+        "y": 0.1,
+        "width": round(width_per - 0.04, 2),
+        "height": 0.8
     }

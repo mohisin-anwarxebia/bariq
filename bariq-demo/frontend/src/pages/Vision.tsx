@@ -2,172 +2,142 @@ import { useState } from 'react'
 import { InfoTooltip } from '../components/InfoTooltip'
 
 export default function Vision() {
-  const [singleResult, setSingleResult] = useState<any>(null)
-  const [batchResults, setBatchResults] = useState<any>(null)
+  const [result, setResult] = useState<any>(null)
   const [analyzing, setAnalyzing] = useState(false)
-  const [mode, setMode] = useState<'single' | 'batch'>('single')
-  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-  const analyzeDemoBottle = async () => {
+  const analyzeImage = async (file?: File) => {
     setAnalyzing(true)
-    setBatchResults(null)
-    await new Promise(resolve => setTimeout(resolve, 1200))
-    const res = await fetch('/api/vision/analyze', { method: 'POST' })
-    const data = await res.json()
-    setSingleResult(data)
-    setAnalyzing(false)
-  }
+    setResult(null)
 
-  const analyzeUploadedFiles = async () => {
-    if (!selectedFiles || selectedFiles.length === 0) return
-    setAnalyzing(true)
-    setSingleResult(null)
-    setBatchResults(null)
-
-    await new Promise(resolve => setTimeout(resolve, 800 + selectedFiles.length * 400))
+    await new Promise(resolve => setTimeout(resolve, 1500))
 
     const formData = new FormData()
-    if (selectedFiles.length === 1) {
-      formData.append('image', selectedFiles[0])
-      const res = await fetch('/api/vision/analyze', { method: 'POST', body: formData })
-      const data = await res.json()
-      setSingleResult(data)
-    } else {
-      for (let i = 0; i < selectedFiles.length; i++) {
-        formData.append('images', selectedFiles[i])
-      }
-      const res = await fetch('/api/vision/analyze-batch', { method: 'POST', body: formData })
-      const data = await res.json()
-      setBatchResults(data)
+    if (file) {
+      formData.append('image', file)
     }
 
+    const res = await fetch('/api/vision/analyze', {
+      method: 'POST',
+      body: file ? formData : undefined
+    })
+    const data = await res.json()
+    setResult(data)
     setAnalyzing(false)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedFiles(e.target.files)
-    setSingleResult(null)
-    setBatchResults(null)
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      setResult(null)
+    }
   }
+
+  const isMultiBottle = result?.bottles_detected > 1
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Vision Analysis</h2>
         <div className="flex items-center gap-2 mt-1">
-          <p className="text-sm text-slate-400">BARIQ Computer Vision — Bottle Recognition & Fill Detection</p>
+          <p className="text-sm text-slate-400">Upload one image — BARIQ detects and analyzes all bottles in the frame</p>
           <InfoTooltip term="Fill Level" definition="" />
         </div>
       </div>
 
-      {/* Mode Toggle */}
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => { setMode('single'); setBatchResults(null) }}
-          className={`text-xs px-3 py-1.5 rounded-md transition-colors ${mode === 'single' ? 'bg-bariq-purple text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-        >
-          Single Bottle
-        </button>
-        <button
-          onClick={() => { setMode('batch'); setSingleResult(null) }}
-          className={`text-xs px-3 py-1.5 rounded-md transition-colors ${mode === 'batch' ? 'bg-bariq-purple text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-        >
-          Multiple Bottles
-        </button>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left — Upload & Trigger */}
+        {/* Left — Upload */}
         <div className="bg-navy-800 rounded-xl border border-slate-700 p-6">
-          <h3 className="font-semibold mb-4">{mode === 'single' ? 'Single Bottle Analysis' : 'Batch Bottle Analysis'}</h3>
+          <h3 className="font-semibold mb-2">Upload Image</h3>
+          <p className="text-xs text-slate-400 mb-4">
+            Upload a photo of a single bottle or an entire shelf — BARIQ automatically detects how many bottles are in the image and analyzes each one.
+          </p>
 
-          {/* File Upload */}
-          <div className="mb-4">
-            <label className="block w-full cursor-pointer">
-              <div className="bg-gradient-to-b from-slate-700/50 to-slate-800/50 rounded-lg h-48 flex items-center justify-center border-2 border-dashed border-slate-600 hover:border-bariq-purple/50 transition-colors relative overflow-hidden">
-                {selectedFiles && selectedFiles.length > 0 ? (
+          {/* File Upload Area */}
+          <label className="block w-full cursor-pointer mb-4">
+            <div className="bg-gradient-to-b from-slate-700/50 to-slate-800/50 rounded-lg h-52 flex items-center justify-center border-2 border-dashed border-slate-600 hover:border-bariq-purple/50 transition-colors relative overflow-hidden">
+              {selectedFile ? (
+                <div className="text-center">
+                  <p className="text-3xl mb-2">📸</p>
+                  <p className="text-sm text-slate-300 font-medium">{selectedFile.name}</p>
+                  <p className="text-xs text-slate-500 mt-1">{(selectedFile.size / 1024).toFixed(0)} KB</p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-5xl mb-2">📷</p>
+                  <p className="text-sm text-slate-300">Click to upload a bottle image</p>
+                  <p className="text-xs text-slate-500 mt-1">Single bottle or full shelf — AI detects all bottles</p>
+                </div>
+              )}
+              {analyzing && (
+                <div className="absolute inset-0 bg-bariq-purple/10 flex items-center justify-center backdrop-blur-sm">
                   <div className="text-center">
-                    <p className="text-3xl mb-2">📸</p>
-                    <p className="text-sm text-slate-300 font-medium">
-                      {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected
-                    </p>
-                    <div className="mt-2 max-h-16 overflow-auto">
-                      {Array.from(selectedFiles).map((f, i) => (
-                        <p key={i} className="text-xs text-slate-400">{f.name}</p>
-                      ))}
-                    </div>
+                    <div className="w-12 h-12 border-2 border-bariq-purple border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-sm text-bariq-purple">Scanning for bottles...</p>
                   </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-4xl mb-2">{mode === 'single' ? '🥃' : '🍾🥃🍸'}</p>
-                    <p className="text-sm text-slate-300">
-                      {mode === 'single' ? 'Click to upload bottle image' : 'Click to upload multiple bottle images'}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">JPG, PNG, or any image file</p>
-                  </div>
-                )}
-                {analyzing && (
-                  <div className="absolute inset-0 bg-bariq-purple/10 flex items-center justify-center backdrop-blur-sm">
-                    <div className="text-center">
-                      <div className="w-12 h-12 border-2 border-bariq-purple border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-                      <p className="text-sm text-bariq-purple">Analyzing{mode === 'batch' ? ` ${selectedFiles?.length || 0} bottles` : ''}...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                multiple={mode === 'batch'}
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
-          </div>
+                </div>
+              )}
+            </div>
+            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+          </label>
 
-          {/* Action Buttons */}
+          {/* Buttons */}
           <div className="space-y-2">
-            {selectedFiles && selectedFiles.length > 0 && (
+            {selectedFile && (
               <button
-                onClick={analyzeUploadedFiles}
+                onClick={() => analyzeImage(selectedFile)}
                 disabled={analyzing}
                 className="w-full py-3 bg-bariq-purple rounded-lg font-medium hover:bg-bariq-purple/80 transition-colors disabled:opacity-50 active:scale-[0.98]"
               >
-                {analyzing ? '🔍 Analyzing...' : `👁️ Analyze ${selectedFiles.length} Bottle${selectedFiles.length > 1 ? 's' : ''}`}
+                {analyzing ? '🔍 Scanning image...' : '👁️ Analyze Image'}
               </button>
             )}
             <button
-              onClick={analyzeDemoBottle}
+              onClick={() => analyzeImage()}
               disabled={analyzing}
-              className="w-full py-3 bg-slate-700 border border-slate-600 rounded-lg font-medium hover:bg-slate-600 transition-colors disabled:opacity-50 text-sm"
+              className="w-full py-2.5 bg-slate-700 border border-slate-600 rounded-lg font-medium hover:bg-slate-600 transition-colors disabled:opacity-50 text-sm"
             >
-              {analyzing && !selectedFiles ? '🔍 Analyzing...' : '🥃 Use Demo Bottle (Don Julio 1942)'}
+              🥃 Demo: Single Bottle (Don Julio 1942)
+            </button>
+            <button
+              onClick={() => {
+                setSelectedFile(new File([""], "bar-shelf-lineup.jpg", { type: "image/jpeg" }))
+                setTimeout(() => analyzeImage(new File([""], "bar-shelf-lineup.jpg", { type: "image/jpeg" })), 100)
+              }}
+              disabled={analyzing}
+              className="w-full py-2.5 bg-slate-700 border border-slate-600 rounded-lg font-medium hover:bg-slate-600 transition-colors disabled:opacity-50 text-sm"
+            >
+              🍾 Demo: Multiple Bottles (Shelf Photo)
             </button>
           </div>
 
-          <p className="text-xs text-slate-500 text-center mt-3">
-            💡 Tip: Name files with bottle names for best recognition (e.g., "grey-goose.jpg", "patron-silver.png")
-          </p>
+          {/* Tips */}
+          <div className="mt-4 p-3 bg-slate-700/20 rounded-lg">
+            <p className="text-xs font-medium text-slate-400 mb-1">How it works:</p>
+            <ul className="text-xs text-slate-500 space-y-1">
+              <li>• Upload any photo containing bottles</li>
+              <li>• AI detects number of bottles in the image</li>
+              <li>• Each bottle: ID → fill level → servings → reconciliation</li>
+              <li>• Works with 1 bottle or 10 bottles in one shot</li>
+            </ul>
+          </div>
         </div>
 
         {/* Right — Results */}
         <div className="space-y-4">
-          {/* Single Result */}
-          {singleResult && <SingleBottleResult result={singleResult} />}
+          {result && !isMultiBottle && <SingleBottleResult result={result} />}
+          {result && isMultiBottle && <MultiBottleResult data={result} />}
 
-          {/* Batch Results */}
-          {batchResults && <BatchBottleResults data={batchResults} />}
-
-          {/* Empty State */}
-          {!singleResult && !batchResults && !analyzing && (
+          {!result && !analyzing && (
             <div className="bg-navy-800 rounded-xl border border-slate-700 p-8 text-center text-slate-400">
               <p className="text-5xl mb-3">👁️</p>
-              <p className="text-sm font-medium">Upload images or use demo bottle to start</p>
+              <p className="text-sm font-medium">Upload an image to start analysis</p>
               <p className="text-xs text-slate-500 mt-2">
-                BARIQ identifies bottles, measures fill level, and compares against inventory and POS records
+                The vision system detects all bottles in the frame — whether it's a closeup of one bottle or a photo of your entire bar shelf.
               </p>
               <div className="mt-4 p-3 bg-slate-700/30 rounded-lg text-left">
-                <p className="text-xs font-medium text-slate-400 mb-1">Recognized bottles:</p>
+                <p className="text-xs font-medium text-slate-400 mb-1">Recognizes 10 brands:</p>
                 <p className="text-xs text-slate-500">
                   Don Julio 1942 • Patron Silver • Tito's Vodka • Grey Goose • Jameson • Woodford Reserve • Hendrick's Gin • Jack Daniel's • Tanqueray • Bacardi
                 </p>
@@ -183,13 +153,20 @@ export default function Vision() {
 function SingleBottleResult({ result }: { result: any }) {
   return (
     <>
+      {/* Detection */}
+      <div className="bg-navy-800 rounded-xl border border-slate-700 p-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs bg-bariq-blue/20 text-bariq-blue px-2 py-0.5 rounded">1 bottle detected</span>
+          {result.filename && <span className="text-xs text-slate-500">📄 {result.filename}</span>}
+        </div>
+      </div>
+
       {/* Recognition */}
       <div className="bg-navy-800 rounded-xl border border-slate-700 p-5">
         <div className="flex items-center gap-1 mb-3">
-          <h4 className="text-sm font-medium text-slate-400">Bottle Detected</h4>
+          <h4 className="text-sm font-medium text-slate-400">Bottle Identified</h4>
           <InfoTooltip term="Confidence Score" definition="" />
         </div>
-        {result.filename && <p className="text-xs text-slate-500 mb-2">📄 {result.filename}</p>}
         <p className="text-xl font-bold">{result.bottle.name}</p>
         <div className="flex items-center gap-2 mt-1">
           <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -207,41 +184,13 @@ function SingleBottleResult({ result }: { result: any }) {
         </div>
         <div className="flex items-center gap-4">
           <div className="w-12 h-32 bg-slate-700 rounded-lg relative overflow-hidden border border-slate-600">
-            <div
-              className="absolute bottom-0 w-full bg-gradient-to-t from-bariq-blue to-bariq-blue/60 rounded-b-lg transition-all duration-1000"
-              style={{ height: `${result.fill_level.percentage}%` }}
-            />
+            <div className="absolute bottom-0 w-full bg-gradient-to-t from-bariq-blue to-bariq-blue/60 rounded-b-lg transition-all duration-1000" style={{ height: `${result.fill_level.percentage}%` }} />
           </div>
           <div>
             <p className="text-3xl font-bold">{result.fill_level.percentage}%</p>
             <p className="text-sm text-slate-400">remaining</p>
-            <p className="text-xs text-slate-500 mt-1">Confidence: {Math.round(result.fill_level.confidence * 100)}%</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Measurements */}
-      <div className="bg-navy-800 rounded-xl border border-slate-700 p-5">
-        <h4 className="text-sm font-medium text-slate-400 mb-3">Measurements</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-slate-700/30 rounded-lg p-3">
-            <p className="text-lg font-bold">{result.measurements.bottle_size_ml}ml</p>
-            <p className="text-xs text-slate-400">Bottle Size</p>
-          </div>
-          <div className="bg-slate-700/30 rounded-lg p-3">
-            <p className="text-lg font-bold">{result.measurements.estimated_remaining_ml}ml</p>
-            <p className="text-xs text-slate-400">Remaining</p>
-          </div>
-          <div className="bg-slate-700/30 rounded-lg p-3">
-            <p className="text-lg font-bold">{result.measurements.standard_pour_ml}ml</p>
-            <div className="flex items-center gap-1">
-              <p className="text-xs text-slate-400">Standard Pour</p>
-              <InfoTooltip term="Standard Pour" definition="" />
-            </div>
-          </div>
-          <div className="bg-slate-700/30 rounded-lg p-3">
-            <p className="text-lg font-bold text-bariq-blue">≈{result.measurements.estimated_servings}</p>
-            <p className="text-xs text-slate-400">Servings Left</p>
+            <p className="text-xs text-slate-500 mt-1">{result.measurements.estimated_remaining_ml}ml of {result.measurements.bottle_size_ml}ml</p>
+            <p className="text-xs text-bariq-blue mt-1">≈ {result.measurements.estimated_servings} servings @ {result.measurements.standard_pour_ml}ml pour</p>
           </div>
         </div>
       </div>
@@ -276,7 +225,6 @@ function SingleBottleResult({ result }: { result: any }) {
         ) : (
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
             <p className="text-sm text-green-300 font-medium">✅ No significant variance</p>
-            <p className="text-xs text-slate-400 mt-1">Bottle is within expected parameters.</p>
           </div>
         )}
       </div>
@@ -284,62 +232,99 @@ function SingleBottleResult({ result }: { result: any }) {
   )
 }
 
-function BatchBottleResults({ data }: { data: any }) {
+function MultiBottleResult({ data }: { data: any }) {
+  const summary = data.detection_summary
   return (
     <>
-      {/* Summary */}
-      <div className="bg-navy-800 rounded-xl border border-slate-700 p-5">
-        <h4 className="font-semibold mb-3">Batch Analysis — {data.total_bottles_analyzed} Bottles</h4>
+      {/* Detection Summary */}
+      <div className="bg-navy-800 rounded-xl border border-bariq-purple/30 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-bariq-purple">✨</span>
+          <h4 className="font-semibold">BARIQ detected {data.bottles_detected} bottles in this image</h4>
+        </div>
+        {data.filename && <p className="text-xs text-slate-500 mb-3">📄 {data.filename}</p>}
+
         <div className="grid grid-cols-3 gap-3 mb-3">
           <div className="text-center bg-green-500/10 border border-green-500/20 rounded-lg p-3">
-            <p className="text-2xl font-bold text-green-400">{data.summary.bottles_ok}</p>
+            <p className="text-2xl font-bold text-green-400">{summary.bottles_ok}</p>
             <p className="text-xs text-slate-400">OK</p>
           </div>
           <div className="text-center bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
-            <p className="text-2xl font-bold text-yellow-400">{data.summary.bottles_with_variance}</p>
+            <p className="text-2xl font-bold text-yellow-400">{summary.bottles_with_variance}</p>
             <p className="text-xs text-slate-400">Variance</p>
           </div>
-          <div className="text-center bg-slate-700/30 rounded-lg p-3">
-            <p className="text-2xl font-bold text-red-400">${data.total_variance_revenue_impact}</p>
-            <p className="text-xs text-slate-400">Impact</p>
+          <div className="text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <p className="text-2xl font-bold text-red-400">${summary.total_variance_revenue_impact}</p>
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-xs text-slate-400">Impact</p>
+              <InfoTooltip term="Revenue Impact" definition="" />
+            </div>
           </div>
         </div>
-        <p className="text-xs text-slate-400">{data.summary.recommendation}</p>
+
+        <p className="text-xs text-slate-400">{summary.recommendation}</p>
       </div>
 
-      {/* Individual Results */}
+      {/* Simulated Image Detection View */}
+      <div className="bg-navy-800 rounded-xl border border-slate-700 p-4">
+        <p className="text-xs text-slate-400 mb-2">Detection Map</p>
+        <div className="h-20 bg-slate-700/50 rounded-lg flex items-end gap-1 px-2 py-2 relative">
+          {data.bottles.map((bottle: any, i: number) => (
+            <div
+              key={i}
+              className={`flex-1 rounded-t-md flex items-center justify-center text-lg border-2 ${
+                bottle.comparison.variance_detected
+                  ? 'border-yellow-500/60 bg-yellow-500/10'
+                  : 'border-green-500/60 bg-green-500/10'
+              }`}
+              style={{ height: `${bottle.fill_level.percentage}%` }}
+              title={`${bottle.bottle.name} — ${bottle.fill_level.percentage}% fill`}
+            >
+              <span className="text-xs">🥃</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-1 mt-1 px-2">
+          {data.bottles.map((bottle: any, i: number) => (
+            <p key={i} className="flex-1 text-center text-[9px] text-slate-500 truncate">{bottle.bottle.name.split(' ')[0]}</p>
+          ))}
+        </div>
+      </div>
+
+      {/* Per-Bottle Detail */}
       <div className="space-y-2">
-        {data.results.map((result: any, i: number) => (
+        {data.bottles.map((bottle: any, i: number) => (
           <div key={i} className={`bg-navy-800 rounded-xl border p-4 ${
-            result.comparison.variance_detected ? 'border-yellow-500/30' : 'border-slate-700'
+            bottle.comparison.variance_detected ? 'border-yellow-500/30' : 'border-slate-700'
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center text-lg">
-                  🥃
+                <div className="w-10 h-14 bg-slate-700 rounded relative overflow-hidden border border-slate-600">
+                  <div className="absolute bottom-0 w-full bg-bariq-blue/50" style={{ height: `${bottle.fill_level.percentage}%` }} />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">{result.bottle.name}</p>
-                  <p className="text-xs text-slate-400">{result.filename}</p>
+                  <p className="text-sm font-medium">{bottle.bottle.name}</p>
+                  <p className="text-xs text-slate-400">
+                    {bottle.fill_level.percentage}% fill • {bottle.measurements.estimated_remaining_ml}ml • ≈{bottle.measurements.estimated_servings} servings
+                  </p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold">{result.fill_level.percentage}%</span>
-                  <span className="text-xs text-slate-400">fill</span>
-                </div>
-                <p className="text-xs text-slate-500">≈{result.measurements.estimated_servings} servings</p>
-              </div>
-              <div className="text-right ml-4">
-                {result.comparison.variance_detected ? (
-                  <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded">⚠️ Variance</span>
+                {bottle.comparison.variance_detected ? (
+                  <>
+                    <span className="text-xs bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded">⚠️ Variance</span>
+                    <p className="text-xs text-red-400 mt-0.5">-${bottle.financials.variance_revenue_impact}</p>
+                  </>
                 ) : (
                   <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">✓ OK</span>
                 )}
-                {result.financials.variance_revenue_impact > 0 && (
-                  <p className="text-xs text-red-400 mt-0.5">-${result.financials.variance_revenue_impact}</p>
-                )}
               </div>
+            </div>
+            {/* Mini reconciliation */}
+            <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
+              <span>Vision: {bottle.comparison.vision_servings}</span>
+              <span>Inventory: {bottle.comparison.inventory_servings}</span>
+              <span>POS: {bottle.comparison.pos_servings}</span>
             </div>
           </div>
         ))}
