@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base, SessionLocal
 from app.seed import seed_database
-from app.api import dashboard, inventory, sales, forecast, weather, events, experience, feedback, vision, agent, recommendations, audit, demo
+from app.api import dashboard, inventory, sales, forecast, weather, events, experience, feedback, vision, agent, recommendations, audit, demo, live_data
 
 app = FastAPI(
     title="BARIQ API",
@@ -33,6 +33,7 @@ app.include_router(agent.router, prefix="/api", tags=["Agent"])
 app.include_router(recommendations.router, prefix="/api", tags=["Recommendations"])
 app.include_router(audit.router, prefix="/api", tags=["Audit"])
 app.include_router(demo.router, prefix="/api", tags=["Demo"])
+app.include_router(live_data.router, prefix="/api", tags=["Live Data"])
 
 
 @app.on_event("startup")

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import WeatherObservation, LocalEvent, SalesTransaction, Product
-from sqlalchemy import func
+from app.models import WeatherObservation, LocalEvent
+from app.api.live_data import get_live_forecast
 from datetime import datetime, timedelta
 
 router = APIRouter()
@@ -10,6 +10,12 @@ router = APIRouter()
 
 @router.get("/forecast")
 def get_forecast(db: Session = Depends(get_db)):
+    # Check if live data has been uploaded
+    live = get_live_forecast()
+    if live:
+        return live
+
+    # Default demo forecast
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     saturday = today + timedelta(days=(5 - today.weekday()) % 7)
 
